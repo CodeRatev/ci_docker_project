@@ -45,3 +45,24 @@ jobs:
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/myapp:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/myapp:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Deploy to Kubernetes
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s-deployment.yaml
+          kubectl rollout restart deployment/flask-app-deployment
